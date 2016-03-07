@@ -192,8 +192,8 @@ void generate_clist_structure(struct fragment* Flist, int fragments, struct SNPf
 // // it generates a list of fragments (flist) that affect each SNP 
 
 void update_snpfrags(struct fragment* Flist, int fragments, struct SNPfrags* snpfrag, int snps, int* components) {
-    int i = 0, j = 0, t = 0, k = 0, calls = 0; //maxdeg=0,avgdeg=0;
-
+    int i = 0, h = 0 , j = 0, s=0, k = 0, calls = 0; //maxdeg=0,avgdeg=0;
+    
     // find the first fragment whose endpoint lies at snp 'i' or beyond
     for (i = 0; i < snps; i++) {
         snpfrag[i].frags = 0;
@@ -208,7 +208,7 @@ void update_snpfrags(struct fragment* Flist, int fragments, struct SNPfrags* snp
         j = Flist[i].list[0].offset;
         k = Flist[i].list[Flist[i].blocks - 1].len + Flist[i].list[Flist[i].blocks - 1].offset;
         // commented the line below since it slows program for long mate-pairs june 7 2012
-        for (t=j;t<k;t++) { if (snpfrag[t].ff == -1) snpfrag[t].ff = i;  } 
+        //for (t=j;t<k;t++) { if (snpfrag[t].ff == -1) snpfrag[t].ff = i;  } 
     } //for (i=0;i<snps;i++) { fprintf(stdout,"SNP %d firstfrag %d start snp %d \n",i,snpfrag[i].ff,i); } 
 
     for (i = 0; i < fragments; i++) {
@@ -220,6 +220,7 @@ void update_snpfrags(struct fragment* Flist, int fragments, struct SNPfrags* snp
     for (i = 0; i < snps; i++) {
         snpfrag[i].flist = (int*) malloc(sizeof (int)*snpfrag[i].frags);
         snpfrag[i].alist = (char*) malloc(snpfrag[i].frags);
+        snpfrag[i].fxlist = (findex*) malloc(snpfrag[i].frags *sizeof(findex));
     }
 
     for (i = 0; i < snps; i++) {
@@ -229,14 +230,24 @@ void update_snpfrags(struct fragment* Flist, int fragments, struct SNPfrags* snp
         snpfrag[i].edges = 0;
         snpfrag[i].best_mec = 10000;
     }
-
+   
     for (i = 0; i < fragments; i++) {
         calls = 0;
         for (j = 0; j < Flist[i].blocks; j++) {
             for (k = 0; k < Flist[i].list[j].len; k++) {
-                snpfrag[Flist[i].list[j].offset + k].flist[snpfrag[Flist[i].list[j].offset + k].frags] = i;
-                snpfrag[Flist[i].list[j].offset + k].alist[snpfrag[Flist[i].list[j].offset + k].frags] = Flist[i].list[j].hap[k];
-                snpfrag[Flist[i].list[j].offset + k].frags++;
+                s = Flist[i].list[j].offset + k;           // index in snp list
+                h = snpfrag[s].frags; // index into snpfrag.flist
+
+                snpfrag[s].flist[h] = i;
+                snpfrag[s].alist[h] = Flist[i].list[j].hap[k];
+
+                // save the f,j,k indices that we found this fragment spot at
+                // so that from the index in snpfrag.flist alone, we can rapidly
+                // get to the spot in the  global fragment* Flist.
+                snpfrag[s].fxlist[h].j = j;
+                snpfrag[s].fxlist[h].k = k;   
+                
+                snpfrag[s].frags++;
                 calls += Flist[i].list[j].len;
             }
         }

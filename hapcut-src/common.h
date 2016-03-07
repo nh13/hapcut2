@@ -79,6 +79,16 @@ typedef struct EDGE {
     float w;
 } EDGE;
 
+// FINDEX (fragment index)
+// we want each snpfrag.flist member to have a direct index into the fragment* Flist
+// building this index in advance will prevent slowdowns on long reads/fosmid
+
+typedef struct findex{
+    int j; // the index of the block in the fragment
+    int k; // the extra space after list[j].offset
+    // use like so: node = Flist[f].list[j].offset + k;
+} findex;
+
 struct SNPfrags {
     int* flist;
     int frags;
@@ -92,6 +102,7 @@ struct SNPfrags {
     int ff;
     int bcomp; // index of clist to which this snp belongs: reverse mapping  
     struct edge* telist;
+    struct findex* fxlist;
     int tedges; // temporary edge list and number of edges for MIN CUT computation 
     int parent;
     float score;
